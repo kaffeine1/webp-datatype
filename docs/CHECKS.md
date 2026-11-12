@@ -1,7 +1,7 @@
 # How each lane was checked
 
 Everything below was run on 12 November 2026: first in emulators, then
-`dtprobe` alone on two real 68k machines, from a distance. Nobody has yet
+`dtprobe` alone on three real machines, from a distance. Nobody has yet
 sat in front of a real machine and looked at a picture, so read this as
 what was tried, on what, and what came out.
 
@@ -88,7 +88,7 @@ datatypes.library 47.3. The system has no WEBP datatype of its own.
   system's own directories, and WEBP files were recognised ("WebP, base
   webp"), also one copied to RAM: without an extension.
 - `dtprobe` on the seven pictures: the pixels read back with
-  PDTM_READPIXELARRAY are the same bytes as `dwebp`'s. The four pictures
+  PDTM_READPIXELARRAY are the same bytes as `dwebp`'s. The five pictures
   with alpha come back with depth 32, mskHasAlpha and PDTA_AlphaChannel
   set, the way the system's own png.datatype reports a PNG with alpha.
 - The 68020 build of `webpcheck` writes the same files as the host build,
@@ -189,13 +189,31 @@ script, over a remote shell. Nothing was shown on their screens.
   column (depth 24, no masking). The two damaged files are refused with
   error 2008. `alpha-lossy.webp` opens in 0.18 s.
 
+## A real MorphOS machine, from a distance
+
+A Power Mac G5 with MorphOS 3.20 (Ambient 1.50, Kickstart 51.66,
+picture.datatype 50.19), one release older than the emulated one, and no
+WEBP datatype in the system. The files went to RAM: only; the library,
+the descriptor and `dtprobe` were sent back to the build machine and
+compared with an MD5 before anything ran. Then `Assign LIBS:
+RAM:wdt/Classes ADD` and `AddDataTypes RAM:wdt/WebP` as above, and
+`dtprobe` from a script, over a remote shell. Nothing was shown on its
+screen.
+
+- The seven checksums of the "true colour" column. The five pictures with
+  alpha keep it (depth 32, mskHasAlpha, PDTA_AlphaChannel).
+- The two damaged files are refused with error 2008.
+- Every picture opens within a tick or two of the clock `dtprobe` reads,
+  which counts fiftieths of a second: it shows 0.02 s for
+  `alpha-lossy.webp` and 0.00 s for the others.
+
 ## Not checked
 
 - A picture looked at on the screen of a real machine.
-- MorphOS and AmigaOS 4 on real machines.
+- AmigaOS 4 on a real machine.
 - The other true colour picture.datatypes without alpha (AmigaOS 3.5, 3.9,
   3.1.4, an early 3.2, the ones of graphics card systems): one of the kind
   was tried, on the PiStorm machine above.
-- AmigaOS 4 before 4.1 Final Edition Update 3, MorphOS before 3.21.
+- AmigaOS 4 before 4.1 Final Edition Update 3, MorphOS before 3.20.
 - Running out of memory in the middle of a picture.
 - A picture large enough to matter (the largest tried is 512 x 512).
