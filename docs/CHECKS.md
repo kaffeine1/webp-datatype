@@ -1,9 +1,9 @@
 # How each lane was checked
 
 Everything below was run on 12 November 2026: first in emulators, then
-`dtprobe` alone on three real machines, from a distance. Nobody has yet
-sat in front of a real machine and looked at a picture, so read this as
-what was tried, on what, and what came out.
+`dtprobe` on three real machines, from a distance, and MultiView on one
+of them. Nobody has yet sat in front of a real machine and looked at a
+picture, so read this as what was tried, on what, and what came out.
 
 The yardstick is always the same. libwebp's own `dwebp` decodes a file on
 the build machine; the datatype decodes the same file on the Amiga; the
@@ -197,8 +197,7 @@ WEBP datatype in the system. The files went to RAM: only; the library,
 the descriptor and `dtprobe` were sent back to the build machine and
 compared with an MD5 before anything ran. Then `Assign LIBS:
 RAM:wdt/Classes ADD` and `AddDataTypes RAM:wdt/WebP` as above, and
-`dtprobe` from a script, over a remote shell. Nothing was shown on its
-screen.
+`dtprobe` from a script, over a remote shell.
 
 - The seven checksums of the "true colour" column. The five pictures with
   alpha keep it (depth 32, mskHasAlpha, PDTA_AlphaChannel).
@@ -206,10 +205,17 @@ screen.
 - Every picture opens within a tick or two of the clock `dtprobe` reads,
   which counts fiftieths of a second: it shows 0.02 s for
   `alpha-lossy.webp` and 0.00 s for the others.
+- MultiView 3.17, started from a distance, says "WebP immagine: 512 x 512
+  pixel, 32 bit" and blends the sticker, soft shadow included, over its
+  window (`shots/morphos-3.20-g5-multiview-alpha.png`). The picture is the
+  window as the machine composed it, read back over the network: nobody
+  was at the monitor.
 
 ## Not checked
 
-- A picture looked at on the screen of a real machine.
+- A picture looked at by a person on the screen of a real machine (the
+  one from the G5 above was read back from a distance; the two 68k
+  machines showed nothing).
 - AmigaOS 4 on a real machine.
 - The other true colour picture.datatypes without alpha (AmigaOS 3.5, 3.9,
   3.1.4, an early 3.2, the ones of graphics card systems): one of the kind
