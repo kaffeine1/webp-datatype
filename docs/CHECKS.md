@@ -211,6 +211,30 @@ RAM:wdt/Classes ADD` and `AddDataTypes RAM:wdt/WebP` as above, and
   window as the machine composed it, read back over the network: nobody
   was at the monitor.
 
+## The release archives
+
+`make dist` packs each lane into an LhA archive (`scripts/package-release.sh`).
+
+- The three libraries, the three `dtprobe` and the descriptor were built
+  again from an empty directory: they are, byte for byte (MD5), the files
+  that went through the checks above.
+- Each archive was unpacked on the build machine with another LhA program
+  (Lhasa) than the one that made it: the binaries inside are those same
+  files, and each archive holds the binary of its own system.
+- `Install`, from the unpacked 68k archive, on AmigaOS 3.2.3 in WinUAE, in
+  a Shell window:
+  - on a system with no WEBP datatype (the two files deleted, the machine
+    restarted, `dtprobe` refused a WEBP file): it copies the two files,
+    and right after it, without a restart, `dtprobe` opens
+    `alpha-lossy.webp` and `lossy.webp` with the checksums of the table;
+  - with a webp.datatype installed already: it shows the version and
+    asks; "n" leaves everything as it was, "y" replaces the two files;
+  - started from another directory: it says so and changes nothing.
+
+Not tried: `Install` on MorphOS and on AmigaOS 4, and unpacking an archive
+with LhA on an Amiga. The archives have no icons, so `Install` is run from
+a Shell.
+
 ## Not checked
 
 - A picture looked at by a person on the screen of a real machine (the
