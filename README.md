@@ -21,6 +21,14 @@ The decoding is done by [libwebp](https://chromium.googlesource.com/webm/libwebp
 1.6.0, the reference library of the WebM project, built here as plain C
 with no changes. The datatype around it is new code.
 
+## Status
+
+This is the first version, 45.1. It has been run in emulators on every
+system in the table below and, with a test program, on three real
+machines; `docs/CHECKS.md` says what was tried, on what, and what was not.
+There is no packaged release yet: build it from the source, as described
+under Building.
+
 ## Which systems
 
 | System                    | File                           | Needs                          |
