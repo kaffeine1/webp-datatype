@@ -1,0 +1,11 @@
+libwebp 1.6.0, the decoding half only.
+
+Source: libwebp-1.6.0.tar.gz from
+https://storage.googleapis.com/downloads.webmproject.org/releases/webp/
+SHA256 of that archive: e4ab7009bf0629fd11982d4c2aa83964cf244cffba7347ecd39019a9e38c4564
+
+The files are unchanged copies. scripts/vendor-libwebp.sh lists them and
+copies them again from an unpacked archive. The build configuration is
+src/webp/config.h in this repository's own src directory, not here.
+
+Licence: COPYING (BSD 3-clause), with the patent grant in PATENTS.
