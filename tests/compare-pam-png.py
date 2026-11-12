@@ -6,10 +6,14 @@
     compare-pam-png.py <a.pam> <b.png|b.pam>            exact
     compare-pam-png.py --close <a.pam> <b.png|b.pam>    a is a 256 colour
                                                         rendering of b
+    compare-pam-png.py --flat <a.pam> <b.png|b.pam>     a is b laid on white
 
 Exact: every pixel that is not fully transparent must be the same, and
 alpha must be the same everywhere (what lies under a fully transparent
 pixel is nobody's business).
+
+Flat: a must be fully opaque, and every channel within one level of b
+composited on white (one level: the two roundings may differ).
 
 Close: for a picture cut down to a palette and dithered. A pixel is see
 through in one exactly when it is less than half opaque in the other, and
@@ -36,12 +40,25 @@ def load(path):
 def main():
     args = sys.argv[1:]
     close = args and args[0] == "--close"
-    if close:
+    flat = args and args[0] == "--flat"
+    if close or flat:
         args = args[1:]
     a, b = load(args[0]), load(args[1])
     if a.size != b.size:
         print("sizes differ: %s and %s" % (a.size, b.size), file=sys.stderr)
         return 1
+
+    if flat:
+        if a.getchannel("A").getextrema() != (255, 255):
+            print("not fully opaque", file=sys.stderr)
+            return 1
+        white = Image.new("RGBA", b.size, (255, 255, 255, 255))
+        want = Image.alpha_composite(white, b).convert("RGB")
+        worst = max(hi for _, hi in ImageChops.difference(a.convert("RGB"), want).getextrema())
+        if worst > 1:
+            print("differs from the composite by %d levels" % worst, file=sys.stderr)
+            return 1
+        return 0
 
     if not close:
         if a.getchannel("A").tobytes() != b.getchannel("A").tobytes():

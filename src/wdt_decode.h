@@ -45,6 +45,12 @@ int wdt_decode(const unsigned char *data, size_t size, struct wdt_picture *pic);
 
 void wdt_release(struct wdt_picture *pic);
 
+/*
+ * Lays a picture with alpha on a plain colour (0xRRGGBB), in place, for a
+ * system that cannot carry alpha: every pixel ends fully opaque.
+ */
+void wdt_flatten(struct wdt_picture *pic, unsigned long background);
+
 /* 1 when the first bytes are "RIFF", a size and "WEBP". */
 int wdt_is_webp(const unsigned char *data, size_t size);
 

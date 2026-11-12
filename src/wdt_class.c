@@ -154,32 +154,6 @@ static LONG decode(const UBYTE *data, ULONG size, struct wdt_picture *picture)
 
 /* --- handing the pixels over ---------------------------------------------- */
 
-/* Lays a picture with alpha on a plain colour, in place. */
-static void flatten(struct wdt_picture *pic, ULONG background)
-{
-	LONG back[3];
-	ULONG x, y;
-
-	back[0] = (LONG)((background >> 16) & 0xff);
-	back[1] = (LONG)((background >> 8) & 0xff);
-	back[2] = (LONG)(background & 0xff);
-	for (y = 0; y < pic->height; y++) {
-		UBYTE *p = pic->pixels + y * pic->stride;
-
-		for (x = 0; x < pic->width; x++, p += 4) {
-			LONG a = p[0];
-
-			if (a != 0xff) {
-				p[1] = (UBYTE)((p[1] * a + back[0] * (255 - a) + 127) / 255);
-				p[2] = (UBYTE)((p[2] * a + back[1] * (255 - a) + 127) / 255);
-				p[3] = (UBYTE)((p[3] * a + back[2] * (255 - a) + 127) / 255);
-				p[0] = 0xff;
-			}
-		}
-	}
-	pic->has_alpha = 0;
-}
-
 static void fill_header(struct BitMapHeader *bmh, const struct wdt_picture *pic,
                         UBYTE depth, UBYTE masking)
 {
@@ -220,7 +194,7 @@ static LONG deliver_truecolour(Class *cl, Object *o, struct BitMapHeader *bmh,
 	int n = 0;
 
 	if (pic->has_alpha && !keeps_alpha(cl, o))
-		flatten(pic, WDT_BACKGROUND);
+		wdt_flatten(pic, WDT_BACKGROUND);
 
 	fill_header(bmh, pic, pic->has_alpha ? 32 : 24,
 	            pic->has_alpha ? mskHasAlpha : mskNone);
@@ -280,7 +254,7 @@ static void put_row(struct BitMap *bm, ULONG y, const UBYTE *entries,
 static LONG deliver_planar(Class *cl, Object *o, struct BitMapHeader *bmh,
                            struct wdt_picture *pic)
 {
-	struct wdt_palette palette;
+	struct wdt_palette *palette;    /* over 1 KB: not for the caller's stack */
 	struct ColorRegister *registers = NULL;
 	ULONG *cregs = NULL;
 	struct BitMap *bm = NULL;
@@ -290,13 +264,18 @@ static LONG deliver_planar(Class *cl, Object *o, struct BitMapHeader *bmh,
 	unsigned depth;
 	LONG error = ERROR_NO_FREE_STORE;
 
-	if (!wdt_quant_begin(&palette, pic, 256, WDT_BACKGROUND))
+	palette = malloc(sizeof(*palette));
+	if (palette == NULL)
 		return ERROR_NO_FREE_STORE;
-	depth = wdt_quant_depth(palette.count);
+	if (!wdt_quant_begin(palette, pic, 256, WDT_BACKGROUND)) {
+		free(palette);
+		return ERROR_NO_FREE_STORE;
+	}
+	depth = wdt_quant_depth(palette->count);
 	colours = 1UL << depth;
 
 	fill_header(bmh, pic, (UBYTE)depth,
-	            palette.transparent >= 0 ? mskHasTransparentColor : mskNone);
+	            palette->transparent >= 0 ? mskHasTransparentColor : mskNone);
 
 	/* Asking for the colours makes picture.datatype allocate its tables. */
 	tags[0].ti_Tag = PDTA_NumColors;
@@ -312,8 +291,8 @@ static LONG deliver_planar(Class *cl, Object *o, struct BitMapHeader *bmh,
 		unsigned k;
 		UBYTE gun[3] = { 0, 0, 0 };
 
-		if (i < palette.count)
-			memcpy(gun, palette.rgb[i], 3);
+		if (i < palette->count)
+			memcpy(gun, palette->rgb[i], 3);
 		registers[i].red = gun[0];
 		registers[i].green = gun[1];
 		registers[i].blue = gun[2];
@@ -326,7 +305,7 @@ static LONG deliver_planar(Class *cl, Object *o, struct BitMapHeader *bmh,
 	if (row == NULL || bm == NULL)
 		goto out;
 	for (y = 0; y < pic->height; y++) {
-		wdt_quant_row(&palette, pic, y, row);
+		wdt_quant_row(palette, pic, y, row);
 		put_row(bm, y, row, pic->width, depth);
 	}
 
@@ -354,7 +333,8 @@ out:
 	if (bm != NULL)
 		FreeBitMap(bm);
 	free(row);
-	wdt_quant_end(&palette);
+	wdt_quant_end(palette);
+	free(palette);
 	return error;
 }
 

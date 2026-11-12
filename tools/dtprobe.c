@@ -14,7 +14,9 @@
  *
  * With a picture.datatype V43 or later the pixels are read back with
  * PDTM_READPIXELARRAY as ARGB. With an older one the picture is a planar
- * BitMap with a colour table, and that is what gets converted.
+ * BitMap with a colour table, and that is what gets converted. Either way
+ * it is the picture as the datatype delivered it: nothing is remapped to a
+ * screen, so no screen is needed and none is asked for.
  *
  * Builds for AmigaOS 3 (m68k-amigaos-gcc -noixemul), AmigaOS 4 and MorphOS.
  */
@@ -33,21 +35,56 @@
 #include <datatypes/datatypesclass.h>
 #include <datatypes/pictureclass.h>
 
+/*
+ * The base gets a name of its own: with the usual one, the C library of the
+ * 68k compiler opens and closes datatypes.library by itself as well.
+ */
+#define DATATYPES_BASE_NAME ProbeDataTypesBase
+
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/datatypes.h>
+#if defined(__amigaos4__)
+#include <proto/intuition.h>
+#else
+#include <clib/alib_protos.h>
+#endif
+
+/* Every line is flushed: if a datatype brings the program down, what was
+ * said before stays in the output file. */
+#if defined(__amigaos4__)
+#define SAY(...) do { Printf(__VA_ARGS__); FFlush(Output()); } while (0)
+#else
+#define SAY(...) do { Printf(__VA_ARGS__); Flush(Output()); } while (0)
+#endif
 
 #ifndef PDTA_AlphaChannel
 #define PDTA_AlphaChannel (DTA_Dummy + 256)
 #endif
 
-struct Library *DataTypesBase;
+struct Library *ProbeDataTypesBase;
 #if defined(__amigaos4__)
 struct DataTypesIFace *IDataTypes;
+struct Library *ProbeIntuitionBase;
+struct IntuitionIFace *IIntuition;
 #endif
 
 static const char version[] __attribute__((used)) =
 	"$VER: dtprobe 1.0 (12.11.2026)";
+
+/*
+ * A method sent straight to the object. DoDTMethodA() is for methods that
+ * carry a GadgetInfo: it writes one into the second field of any message,
+ * which in a pdtBlitPixelArray is the address of the pixels.
+ */
+static ULONG do_method(Object *o, Msg msg)
+{
+#if defined(__amigaos4__)
+	return IDoMethodA(o, msg);
+#else
+	return DoMethodA(o, msg);
+#endif
+}
 
 static APTR get_memory(ULONG size)
 {
@@ -179,7 +216,6 @@ static LONG probe(const char *name, const char *out)
 	struct Library *picture;
 	struct DataType *type = NULL;
 	struct BitMapHeader *bmh = NULL;
-	struct gpLayout layout;
 	Object *o;
 	ULONG alpha = 0, known, picture_version = 0, picture_revision = 0;
 	LONG start, taken;
@@ -191,7 +227,7 @@ static LONG probe(const char *name, const char *out)
 		picture_revision = picture->lib_Revision;
 		CloseLibrary(picture);
 	}
-	Printf("picture.datatype %ld.%ld\n", picture_version, picture_revision);
+	SAY("picture.datatype %ld.%ld\n", picture_version, picture_revision);
 
 	start = ticks();
 	o = NewDTObject((APTR)name,
@@ -202,42 +238,36 @@ static LONG probe(const char *name, const char *out)
 	                TAG_DONE);
 	taken = ticks() - start;
 	if (o == NULL) {
-		Printf("%s: no picture, error %ld\n", (ULONG)name, IoErr());
+		SAY("%s: no picture, error %ld\n", (ULONG)name, IoErr());
 		return RETURN_ERROR;
 	}
 
 	GetDTAttrs(o, DTA_DataType, (ULONG)&type, PDTA_BitMapHeader, (ULONG)&bmh,
 	           TAG_DONE);
 	if (type != NULL && type->dtn_Header != NULL)
-		Printf("datatype: %s (base %s)\n", (ULONG)type->dtn_Header->dth_Name,
+		SAY("datatype: %s (base %s)\n", (ULONG)type->dtn_Header->dth_Name,
 		       (ULONG)type->dtn_Header->dth_BaseName);
-	Printf("opened in %ld.%02ld s\n", taken / 50, (taken % 50) * 2);
+	SAY("opened in %ld.%02ld s\n", taken / 50, (taken % 50) * 2);
 	if (bmh == NULL) {
-		Printf("no BitMapHeader\n");
+		SAY("no BitMapHeader\n");
 		DisposeDTObject(o);
 		return RETURN_ERROR;
 	}
-	Printf("size %ld x %ld, depth %ld, masking %ld, transparent %ld\n",
+	SAY("size %ld x %ld, depth %ld, masking %ld, transparent %ld\n",
 	       (ULONG)bmh->bmh_Width, (ULONG)bmh->bmh_Height, (ULONG)bmh->bmh_Depth,
 	       (ULONG)bmh->bmh_Masking, (ULONG)bmh->bmh_Transparent);
 	known = GetDTAttrs(o, PDTA_AlphaChannel, (ULONG)&alpha, TAG_DONE);
 	if (known)
-		Printf("PDTA_AlphaChannel: %s\n", (ULONG)(alpha ? "yes" : "no"));
+		SAY("PDTA_AlphaChannel: %s\n", (ULONG)(alpha ? "yes" : "no"));
 	else
-		Printf("PDTA_AlphaChannel: not known to this picture.datatype\n");
-
-	layout.MethodID = DTM_PROCLAYOUT;
-	layout.gpl_GInfo = NULL;
-	layout.gpl_Initial = 1;
-	if (!DoDTMethodA(o, NULL, NULL, (Msg)&layout))
-		Printf("DTM_PROCLAYOUT failed, error %ld\n", IoErr());
+		SAY("PDTA_AlphaChannel: not known to this picture.datatype\n");
 
 	if (out != NULL && picture_version >= 43) {
 		ULONG width = bmh->bmh_Width, height = bmh->bmh_Height;
 		UBYTE *argb = get_memory(width * height * 4);
 
 		if (argb == NULL) {
-			Printf("no memory for the pixels\n");
+			SAY("no memory for the pixels\n");
 			result = RETURN_ERROR;
 		} else {
 			struct pdtBlitPixelArray read;
@@ -251,13 +281,13 @@ static LONG probe(const char *name, const char *out)
 			read.pbpa_Top = 0;
 			read.pbpa_Width = width;
 			read.pbpa_Height = height;
-			got = DoDTMethodA(o, NULL, NULL, (Msg)&read);
-			Printf("PDTM_READPIXELARRAY returned %ld\n", got);
+			got = do_method(o, (Msg)&read);
+			SAY("PDTM_READPIXELARRAY returned %ld\n", got);
 			if (save_argb(out, argb, width, height,
 			              bmh->bmh_Masking == mskHasAlpha || alpha))
-				Printf("wrote %s\n", (ULONG)out);
+				SAY("wrote %s\n", (ULONG)out);
 			else {
-				Printf("cannot write %s\n", (ULONG)out);
+				SAY("cannot write %s\n", (ULONG)out);
 				result = RETURN_ERROR;
 			}
 			FreeVec(argb);
@@ -266,17 +296,32 @@ static LONG probe(const char *name, const char *out)
 		struct BitMap *bm = NULL;
 		struct ColorRegister *colours = NULL;
 		ULONG ncolours = 0;
+		struct gpLayout layout;
 
+		/*
+		 * An old picture.datatype gives its BitMap out only once the
+		 * picture has been laid out. Nothing is remapped (PDTA_Remap is
+		 * off), so no screen is needed for it.
+		 */
+		layout.MethodID = DTM_PROCLAYOUT;
+		layout.gpl_GInfo = NULL;
+		layout.gpl_Initial = 1;
+		if (!DoDTMethodA(o, NULL, NULL, (Msg)&layout))
+			SAY("DTM_PROCLAYOUT failed, error %ld\n", IoErr());
 		GetDTAttrs(o, PDTA_BitMap, (ULONG)&bm, PDTA_ColorRegisters,
 		           (ULONG)&colours, PDTA_NumColors, (ULONG)&ncolours, TAG_DONE);
-		Printf("planar: %ld colours\n", ncolours);
+		SAY("planar: %ld colours, BitMap %lx, colour table %lx\n", ncolours,
+		    (ULONG)bm, (ULONG)colours);
+		if (bm != NULL)
+			SAY("BitMap: %ld bytes per row, %ld rows, depth %ld\n",
+			    (ULONG)bm->BytesPerRow, (ULONG)bm->Rows, (ULONG)bm->Depth);
 		if (bm == NULL || colours == NULL) {
-			Printf("no BitMap or no colours\n");
+			SAY("no BitMap or no colours\n");
 			result = RETURN_ERROR;
 		} else if (save_planar(out, bm, colours, ncolours, bmh)) {
-			Printf("wrote %s\n", (ULONG)out);
+			SAY("wrote %s\n", (ULONG)out);
 		} else {
-			Printf("cannot write %s\n", (ULONG)out);
+			SAY("cannot write %s\n", (ULONG)out);
 			result = RETURN_ERROR;
 		}
 	}
@@ -290,25 +335,30 @@ int main(int argc, char **argv)
 	LONG result;
 
 	if (argc < 2 || argc > 3) {
-		Printf("usage: dtprobe <picture> [<out.pam>]\n");
+		SAY("usage: dtprobe <picture> [<out.pam>]\n");
 		return RETURN_FAIL;
 	}
-	DataTypesBase = OpenLibrary("datatypes.library", 39);
-	if (DataTypesBase == NULL) {
-		Printf("no datatypes.library\n");
+	ProbeDataTypesBase = OpenLibrary("datatypes.library", 39);
+	if (ProbeDataTypesBase == NULL) {
+		SAY("no datatypes.library\n");
 		return RETURN_FAIL;
 	}
 #if defined(__amigaos4__)
-	IDataTypes = (struct DataTypesIFace *)GetInterface(DataTypesBase, "main", 1, NULL);
-	if (IDataTypes == NULL) {
-		CloseLibrary(DataTypesBase);
+	IDataTypes = (struct DataTypesIFace *)GetInterface(ProbeDataTypesBase, "main", 1, NULL);
+	ProbeIntuitionBase = OpenLibrary("intuition.library", 50);
+	if (ProbeIntuitionBase != NULL)
+		IIntuition = (struct IntuitionIFace *)GetInterface(ProbeIntuitionBase, "main", 1, NULL);
+	if (IDataTypes == NULL || IIntuition == NULL) {
+		SAY("no datatypes or intuition interface\n");
 		return RETURN_FAIL;
 	}
 #endif
 	result = probe(argv[1], argc == 3 ? argv[2] : NULL);
 #if defined(__amigaos4__)
+	DropInterface((struct Interface *)IIntuition);
+	CloseLibrary(ProbeIntuitionBase);
 	DropInterface((struct Interface *)IDataTypes);
 #endif
-	CloseLibrary(DataTypesBase);
+	CloseLibrary(ProbeDataTypesBase);
 	return (int)result;
 }

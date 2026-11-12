@@ -5,6 +5,8 @@
  * Host side check of the decoder the datatype is built around.
  *
  *   webpcheck decode <file.webp> <out.pam>   decode, write RGBA as a PAM
+ *   webpcheck flat <file.webp> <out.pam>     the same, laid on white first,
+ *                                            as for a system without alpha
  *   webpcheck planar <file.webp> <out.pam>   the picture as an old
  *                                            picture.datatype would get it:
  *                                            256 colours, then back to RGBA
@@ -79,7 +81,7 @@ static int write_rgba(const char *path, const struct wdt_picture *pic)
 	return fclose(f) == 0;
 }
 
-static int cmd_decode(const char *in, const char *out)
+static int cmd_decode(const char *in, const char *out, int flat)
 {
 	struct wdt_picture pic;
 	unsigned char *data;
@@ -100,6 +102,8 @@ static int cmd_decode(const char *in, const char *out)
 	printf("%s: %lux%lu %s %s frames=%lu bytes_per_pixel=%u\n", in, pic.width,
 	       pic.height, pic.lossless ? "lossless" : "lossy",
 	       pic.has_alpha ? "alpha" : "opaque", pic.frames, pic.bytes_per_pixel);
+	if (flat)
+		wdt_flatten(&pic, 0xffffffUL);
 	if (!write_rgba(out, &pic)) {
 		fprintf(stderr, "%s: cannot write\n", out);
 		error = 2;
@@ -160,7 +164,8 @@ static int cmd_damage(const char *in)
 	struct wdt_picture pic;
 	unsigned char *data, *copy;
 	size_t size, cut, i;
-	unsigned long seed = 12345, decoded = 0, refused = 0;
+	unsigned int seed = 12345;   /* 32 bits everywhere: the same copies */
+	unsigned long decoded = 0, refused = 0;
 
 	data = read_file(in, &size);
 	if (data == NULL)
@@ -182,12 +187,12 @@ static int cmd_damage(const char *in)
 		size_t at, n, k;
 
 		memcpy(copy, data, size);
-		seed = seed * 1103515245UL + 12345UL;
+		seed = seed * 1103515245U + 12345U;
 		n = 1 + (seed >> 16) % 4;
 		for (k = 0; k < n; k++) {
-			seed = seed * 1103515245UL + 12345UL;
+			seed = seed * 1103515245U + 12345U;
 			at = (seed >> 8) % size;
-			seed = seed * 1103515245UL + 12345UL;
+			seed = seed * 1103515245U + 12345U;
 			copy[at] = (unsigned char)(seed >> 16);
 		}
 		if (wdt_decode(copy, size, &pic) == WDT_OK) {
@@ -207,12 +212,14 @@ static int cmd_damage(const char *in)
 int main(int argc, char **argv)
 {
 	if (argc == 4 && strcmp(argv[1], "decode") == 0)
-		return cmd_decode(argv[2], argv[3]);
+		return cmd_decode(argv[2], argv[3], 0);
+	if (argc == 4 && strcmp(argv[1], "flat") == 0)
+		return cmd_decode(argv[2], argv[3], 1);
 	if (argc == 4 && strcmp(argv[1], "planar") == 0)
 		return cmd_planar(argv[2], argv[3]);
 	if (argc == 3 && strcmp(argv[1], "damage") == 0)
 		return cmd_damage(argv[2]);
-	fprintf(stderr, "usage: webpcheck decode|planar <file.webp> <out.pam>\n"
+	fprintf(stderr, "usage: webpcheck decode|flat|planar <file.webp> <out.pam>\n"
 	                "       webpcheck damage <file.webp>\n");
 	return 2;
 }

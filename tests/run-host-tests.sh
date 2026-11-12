@@ -43,6 +43,17 @@ for name in animated animated-offset; do
 	fi
 done
 
+for name in alpha-lossy alpha-lossless odd-37x29 animated animated-offset; do
+	"$check" flat "$pictures/$name.webp" "$out/$name.flat.pam" >/dev/null
+	if python3 "$here/compare-pam-png.py" --flat "$out/$name.flat.pam" \
+		"$out/$name.pam"; then
+		echo "$name: laid on white as expected"
+	else
+		echo "$name: the picture laid on white is WRONG" >&2
+		failed=1
+	fi
+done
+
 for name in lossy lossless alpha-lossy alpha-lossless odd-37x29 animated \
 	animated-offset; do
 	"$check" planar "$pictures/$name.webp" "$out/$name.planar.pam"

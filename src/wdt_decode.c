@@ -26,6 +26,33 @@ void wdt_release(struct wdt_picture *pic)
 	}
 }
 
+void wdt_flatten(struct wdt_picture *pic, unsigned long background)
+{
+	long back[3];
+	unsigned long x, y;
+
+	if (pic->bytes_per_pixel != 4)
+		return;
+	back[0] = (long)((background >> 16) & 0xff);
+	back[1] = (long)((background >> 8) & 0xff);
+	back[2] = (long)(background & 0xff);
+	for (y = 0; y < pic->height; y++) {
+		unsigned char *p = pic->pixels + y * pic->stride;
+
+		for (x = 0; x < pic->width; x++, p += 4) {
+			long a = p[0];
+
+			if (a != 0xff) {
+				p[1] = (unsigned char)((p[1] * a + back[0] * (255 - a) + 127) / 255);
+				p[2] = (unsigned char)((p[2] * a + back[1] * (255 - a) + 127) / 255);
+				p[3] = (unsigned char)((p[3] * a + back[2] * (255 - a) + 127) / 255);
+				p[0] = 0xff;
+			}
+		}
+	}
+	pic->has_alpha = 0;
+}
+
 static int status_to_error(VP8StatusCode status)
 {
 	if (status == VP8_STATUS_OK)
