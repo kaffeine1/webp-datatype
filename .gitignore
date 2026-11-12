@@ -5,3 +5,5 @@
 *.local.md
 .DS_Store
 __pycache__/
+/core
+/core.[0-9]*
