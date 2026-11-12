@@ -221,8 +221,11 @@ static LONG deliver_truecolour(Class *cl, Object *o, struct BitMapHeader *bmh,
 	write.pbpa_Top = 0;
 	write.pbpa_Width = pic->width;
 	write.pbpa_Height = pic->height;
-	if (!wdt_super(cl, o, (Msg)&write))
-		return ERROR_NO_FREE_STORE;
+	/*
+	 * What the method answers says nothing: with every pixel taken, the
+	 * picture.datatype of AmigaOS 3.2 answers 1 and the one of MorphOS 0.
+	 */
+	wdt_super(cl, o, (Msg)&write);
 	return 0;
 }
 

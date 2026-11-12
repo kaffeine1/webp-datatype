@@ -8,9 +8,11 @@
  *   dtprobe <picture> [<out.pam>]
  *
  * It knows nothing about WEBP: it shows what the datatype that the system
- * picked made of the file. The pixels are written as a PAM (RGBA), with
- * the header dwebp -pam writes, so that the file can be compared on
- * another machine with what libwebp's own tools decode.
+ * picked made of the file. It prints a checksum of the pixels (FNV-1a, 32
+ * bits, over the RGBA bytes, row by row), to compare with the one that
+ * tests/pam-checksum.py prints for what libwebp's own dwebp decodes: one
+ * line read off the screen is enough. With a second argument the pixels
+ * are also written as a PAM, with the header dwebp -pam writes.
  *
  * With a picture.datatype V43 or later the pixels are read back with
  * PDTM_READPIXELARRAY as ARGB. With an older one the picture is a planar
@@ -126,9 +128,31 @@ static void put_number(BPTR file, ULONG value)
 	put_text(file, &digits[at]);
 }
 
+static ULONG checksum = 2166136261UL;
+
+static void sum_bytes(const UBYTE *bytes, ULONG count)
+{
+	ULONG sum = checksum;
+
+	while (count-- > 0)
+		sum = (sum ^ *bytes++) * 16777619UL;
+	checksum = sum;
+}
+
+/* One row of RGBA: into the checksum, and into the file if there is one. */
+static BOOL put_row(BPTR file, const UBYTE *row, ULONG width)
+{
+	sum_bytes(row, width * 4);
+	return file == 0 || Write(file, (APTR)row, (LONG)(width * 4)) == (LONG)(width * 4);
+}
+
 static BPTR open_pam(const char *name, ULONG width, ULONG height)
 {
-	BPTR file = Open((STRPTR)name, MODE_NEWFILE);
+	BPTR file;
+
+	if (name == NULL)
+		return 0;
+	file = Open((STRPTR)name, MODE_NEWFILE);
 
 	if (file != 0) {
 		put_text(file, "P7\nWIDTH ");
@@ -140,17 +164,16 @@ static BPTR open_pam(const char *name, ULONG width, ULONG height)
 	return file;
 }
 
-/* ARGB rows to an RGBA file. */
+/* ARGB rows as RGBA: checksummed, and written when a file is wanted. */
 static BOOL save_argb(const char *name, UBYTE *argb, ULONG width, ULONG height,
                       BOOL alpha)
 {
 	BPTR file = open_pam(name, width, height);
 	ULONG x, y;
-	BOOL ok = TRUE;
+	BOOL ok = name == NULL || file != 0;
 
-	if (file == 0)
-		return FALSE;
-	for (y = 0; y < height && ok; y++) {
+	/* Every row is summed, whether or not the file can be written. */
+	for (y = 0; y < height; y++) {
 		UBYTE *p = argb + y * width * 4;
 
 		for (x = 0; x < width; x++, p += 4) {
@@ -161,14 +184,15 @@ static BOOL save_argb(const char *name, UBYTE *argb, ULONG width, ULONG height,
 			p[2] = p[3];
 			p[3] = a;
 		}
-		p = argb + y * width * 4;
-		ok = Write(file, p, (LONG)(width * 4)) == (LONG)(width * 4);
+		if (!put_row(file, argb + y * width * 4, width))
+			ok = FALSE;
 	}
-	Close(file);
+	if (file != 0)
+		Close(file);
 	return ok;
 }
 
-/* A planar BitMap and its colour table to an RGBA file. */
+/* A planar BitMap and its colour table as RGBA, the same way. */
 static BOOL save_planar(const char *name, struct BitMap *bm,
                         struct ColorRegister *colours, ULONG ncolours,
                         struct BitMapHeader *bmh)
@@ -176,17 +200,14 @@ static BOOL save_planar(const char *name, struct BitMap *bm,
 	ULONG width = bmh->bmh_Width, height = bmh->bmh_Height, x, y;
 	BPTR file;
 	UBYTE *row;
-	BOOL ok = TRUE;
+	BOOL ok;
 
 	row = get_memory(width * 4);
 	if (row == NULL)
 		return FALSE;
 	file = open_pam(name, width, height);
-	if (file == 0) {
-		FreeVec(row);
-		return FALSE;
-	}
-	for (y = 0; y < height && ok; y++) {
+	ok = name == NULL || file != 0;
+	for (y = 0; y < height; y++) {
 		for (x = 0; x < width; x++) {
 			ULONG entry = 0;
 			int plane;
@@ -204,9 +225,11 @@ static BOOL save_planar(const char *name, struct BitMap *bm,
 			row[x * 4 + 3] = (bmh->bmh_Masking == mskHasTransparentColor &&
 			                  entry == bmh->bmh_Transparent) ? 0 : 0xff;
 		}
-		ok = Write(file, row, (LONG)(width * 4)) == (LONG)(width * 4);
+		if (!put_row(file, row, width))
+			ok = FALSE;
 	}
-	Close(file);
+	if (file != 0)
+		Close(file);
 	FreeVec(row);
 	return ok;
 }
@@ -262,7 +285,7 @@ static LONG probe(const char *name, const char *out)
 	else
 		SAY("PDTA_AlphaChannel: not known to this picture.datatype\n");
 
-	if (out != NULL && picture_version >= 43) {
+	if (picture_version >= 43) {
 		ULONG width = bmh->bmh_Width, height = bmh->bmh_Height;
 		UBYTE *argb = get_memory(width * height * 4);
 
@@ -283,16 +306,20 @@ static LONG probe(const char *name, const char *out)
 			read.pbpa_Height = height;
 			got = do_method(o, (Msg)&read);
 			SAY("PDTM_READPIXELARRAY returned %ld\n", got);
-			if (save_argb(out, argb, width, height,
-			              bmh->bmh_Masking == mskHasAlpha || alpha))
-				SAY("wrote %s\n", (ULONG)out);
-			else {
+			BOOL saved = save_argb(out, argb, width, height,
+			                       bmh->bmh_Masking == mskHasAlpha || alpha);
+
+			SAY("pixels: %ld bytes, checksum %08lx\n", width * height * 4,
+			    checksum);
+			if (!saved) {
 				SAY("cannot write %s\n", (ULONG)out);
 				result = RETURN_ERROR;
+			} else if (out != NULL) {
+				SAY("wrote %s\n", (ULONG)out);
 			}
 			FreeVec(argb);
 		}
-	} else if (out != NULL) {
+	} else {
 		struct BitMap *bm = NULL;
 		struct ColorRegister *colours = NULL;
 		ULONG ncolours = 0;
@@ -318,11 +345,17 @@ static LONG probe(const char *name, const char *out)
 		if (bm == NULL || colours == NULL) {
 			SAY("no BitMap or no colours\n");
 			result = RETURN_ERROR;
-		} else if (save_planar(out, bm, colours, ncolours, bmh)) {
-			SAY("wrote %s\n", (ULONG)out);
 		} else {
-			SAY("cannot write %s\n", (ULONG)out);
-			result = RETURN_ERROR;
+			BOOL saved = save_planar(out, bm, colours, ncolours, bmh);
+
+			SAY("pixels: %ld bytes, checksum %08lx\n",
+			    (ULONG)bmh->bmh_Width * bmh->bmh_Height * 4, checksum);
+			if (!saved) {
+				SAY("cannot write %s\n", (ULONG)out);
+				result = RETURN_ERROR;
+			} else if (out != NULL) {
+				SAY("wrote %s\n", (ULONG)out);
+			}
 		}
 	}
 

@@ -11,6 +11,7 @@
 #   make morphos        build/morphos/webp.datatype  (ppc-morphos-gcc)
 #   make os4            build/os4/webp.datatype      (ppc-amigaos-gcc)
 #   make descriptor     build/descriptor/WebP        (DEVS:DataTypes/WebP)
+#   make kit            build/kit/<lane>: what to copy to a machine to try it
 #
 # AROS has a webp.datatype of its own in the system: there is no AROS lane.
 
@@ -59,7 +60,7 @@ endif
 HOST_WEBP_OBJ := $(patsubst %.c,$(HOST_DIR)/%.o,$(WEBP_SRC))
 HOST_OBJ := $(patsubst %.c,$(HOST_DIR)/%.o,$(CORE_SRC) tests/webpcheck.c)
 
-.PHONY: all test clean os3 morphos os4 descriptor
+.PHONY: all test clean os3 morphos os4 descriptor kit
 all: $(HOST_DIR)/webpcheck
 
 $(HOST_WEBP_OBJ): $(HOST_DIR)/%.o: %.c $(HEADERS)
@@ -230,6 +231,24 @@ $(OS4_DIR)/webp.datatype: $(OS4_OBJ) $(OS4_DIR)/src/wdt_libc.o $(OS4_WEBP_OBJ)
 	$(OS4_STRIP) --strip-unneeded --remove-section=.comment "$@"
 	@strings "$@" | grep -q '^\$$VER: webp.datatype ' || \
 		{ echo "$@: no version string" >&2; rm -f "$@"; exit 1; }
+
+# --- a drawer per lane, for trying it on a machine -----------------------------
+#
+# The lanes that have been built, each with the library and the descriptor
+# where they go under SYS: and DEVS:, the probe tool and the test pictures.
+
+kit: descriptor
+	@for lane in os3 morphos os4; do \
+		test -f "$(BUILD)/$$lane/webp.datatype" || continue; \
+		d="$(BUILD)/kit/$$lane"; \
+		rm -rf "$$d"; \
+		mkdir -p "$$d/Classes/DataTypes" "$$d/Devs/DataTypes" "$$d/pictures"; \
+		cp "$(BUILD)/$$lane/webp.datatype" "$$d/Classes/DataTypes/"; \
+		cp "$(BUILD)/descriptor/WebP" "$$d/Devs/DataTypes/"; \
+		cp "$(BUILD)/$$lane/dtprobe" "$$d/"; \
+		cp tests/pictures/*.webp "$$d/pictures/"; \
+		echo "$$d"; \
+	done
 
 clean:
 	rm -rf "$(BUILD)"

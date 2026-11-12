@@ -50,6 +50,10 @@ Then restart, or tell the system about the new descriptor right away:
 
 To remove it, delete the two files and restart.
 
+If another WEBP datatype is installed already, take it out first: two
+descriptors for the same format leave the choice between them to the
+system.
+
 The descriptor recognises a file by its first twelve bytes ("RIFF", four
 bytes of size, "WEBP"), not by its name, so a WEBP file without the
 `.webp` extension is recognised as well.
@@ -73,6 +77,28 @@ that one can take differs.
   Pixels that are less than half opaque become colour 0, which is marked
   as the transparent colour in the picture's header.
 
+## Checking an installation
+
+`dtprobe` (built next to the library, one for each system) opens a picture
+through datatypes.library, the way any program does, and says what came
+back:
+
+    dtprobe pictures/alpha-lossy.webp
+
+    picture.datatype 47.19
+    datatype: WebP (base webp)
+    opened in 0.24 s
+    size 512 x 512, depth 32, masking 4, transparent 0
+    PDTA_AlphaChannel: yes
+    PDTM_READPIXELARRAY returned 1
+    pixels: 1048576 bytes, checksum 1BC1C506
+
+The checksum is of the pixels as they were read back. `docs/CHECKS.md` has
+the table of what each test picture must give, taken from what libwebp's
+own `dwebp` decodes, and says how each system was checked and on what.
+`make kit` puts the library, the descriptor, `dtprobe` and the test
+pictures of each built lane in one drawer under `build/kit`.
+
 ## Memory and speed
 
 A picture is decoded at its full size, in one go. While it is being opened
@@ -85,7 +111,9 @@ The decoder runs on a stack of its own (64 KB on 68k, 128 KB on PowerPC),
 so the program that opens the picture needs no large stack.
 
 On a 68020 the decoding is not quick: it is the reference decoder in plain
-C, with no assembly.
+C, with no assembly. On a stock A1200 (14 MHz, emulated cycle exact) a
+512 x 512 lossy picture with alpha opens in 17 seconds, a lossless one in
+9, a 320 x 240 lossy picture in under 5.
 
 ## Building
 
