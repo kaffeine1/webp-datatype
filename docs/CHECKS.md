@@ -1,8 +1,9 @@
 # How each lane was checked
 
-Everything below was run in emulators on 12 November 2026. Nothing has
-been run on a real machine yet, so nothing here is a hardware test: it
-says what was tried, on what, and what came out.
+Everything below was run on 12 November 2026: first in emulators, then
+`dtprobe` alone on two real 68k machines, from a distance. Nobody has yet
+sat in front of a real machine and looked at a picture, so read this as
+what was tried, on what, and what came out.
 
 The yardstick is always the same. libwebp's own `dwebp` decodes a file on
 the build machine; the datatype decodes the same file on the Amiga; the
@@ -167,13 +168,34 @@ in the system. Files in RAM:, as on MorphOS.
   usable code on this system (a large number), and it is the same kind of
   number when the system's own datatypes refuse a file.
 
+## Two real 68k machines, from a distance
+
+Both run AmigaOS 3.2.3 (Kickstart 47.115, Workbench 47.5) and neither had
+a WEBP datatype. The files went to RAM: only, with `Assign LIBS:
+RAM:wdt/Classes ADD` and `AddDataTypes RAM:wdt/WebP`; the library and
+`dtprobe` were checked with an MD5 after the copy; `dtprobe` ran from a
+script, over a remote shell. Nothing was shown on their screens.
+
+- **An A1200 with a 68080 accelerator**, picture.datatype 47.19: the seven
+  checksums of the "true colour" column, alpha kept (depth 32,
+  mskHasAlpha). The two damaged files are refused with error 2008.
+  `alpha-lossy.webp` opens in 0.92 s, `alpha-lossless.webp` in 0.44 s,
+  `lossy.webp` in 0.28 s.
+- **An A1200 with a PiStorm, running AfA OS on top of the system**: the
+  picture.datatype in memory there is 46.9, although the file in LIBS: is
+  47.19. It takes true colour and does not know PDTA_AlphaChannel, so this
+  is the path that no emulated system had: the pictures with alpha are
+  laid on white, and the seven checksums are those of the "laid on white"
+  column (depth 24, no masking). The two damaged files are refused with
+  error 2008. `alpha-lossy.webp` opens in 0.18 s.
+
 ## Not checked
 
-- Any real machine.
-- A true colour picture.datatype without alpha (V43 to 47.8: AmigaOS 3.5,
-  3.9, 3.1.4, an early 3.2, or 3.0/3.1 with the picture.datatype of a
-  graphics card system). The code that lays the picture on white is
-  checked on the host; that those systems take the result is not.
+- A picture looked at on the screen of a real machine.
+- MorphOS and AmigaOS 4 on real machines.
+- The other true colour picture.datatypes without alpha (AmigaOS 3.5, 3.9,
+  3.1.4, an early 3.2, the ones of graphics card systems): one of the kind
+  was tried, on the PiStorm machine above.
 - AmigaOS 4 before 4.1 Final Edition Update 3, MorphOS before 3.21.
 - Running out of memory in the middle of a picture.
 - A picture large enough to matter (the largest tried is 512 x 512).
