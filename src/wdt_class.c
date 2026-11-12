@@ -79,7 +79,11 @@ static LONG read_handle(BPTR handle, UBYTE **data, ULONG *size)
 	ULONG total, have;
 	LONG got;
 
+#if defined(__amigaos4__)
+	ChangeFilePosition(handle, 0, OFFSET_BEGINNING);
+#else
 	Seek(handle, 0, OFFSET_BEGINNING);
+#endif
 	got = Read(handle, head, sizeof(head));
 	if (got < 0)
 		return IoErr();

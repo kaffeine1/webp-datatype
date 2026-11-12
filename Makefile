@@ -59,7 +59,7 @@ endif
 HOST_WEBP_OBJ := $(patsubst %.c,$(HOST_DIR)/%.o,$(WEBP_SRC))
 HOST_OBJ := $(patsubst %.c,$(HOST_DIR)/%.o,$(CORE_SRC) tests/webpcheck.c)
 
-.PHONY: all test clean os3 descriptor
+.PHONY: all test clean os3 morphos os4 descriptor
 all: $(HOST_DIR)/webpcheck
 
 $(HOST_WEBP_OBJ): $(HOST_DIR)/%.o: %.c $(HEADERS)
@@ -139,6 +139,86 @@ $(OS3_WEBP_OBJ): $(OS3_DIR)/%.o: %.c $(HEADERS)
 $(OS3_DIR)/webp.datatype: $(OS3_DIR)/src/os3/start.o $(OS3_DIR)/src/os3/lib.o \
 		$(OS3_OBJ) $(OS3_DIR)/src/wdt_libc.o $(OS3_WEBP_OBJ)
 	$(OS3_CC) -noixemul -m68020 -nostartfiles -nostdlib -s -o "$@" $^ -lgcc
+	@strings "$@" | grep -q '^\$$VER: webp.datatype ' || \
+		{ echo "$@: no version string" >&2; rm -f "$@"; exit 1; }
+
+# --- the two PowerPC lanes ----------------------------------------------------
+#
+# Both picture.datatypes take true colour, so the 256 colour path stays out.
+# Same rule as on 68k: no C library, no startup code.
+
+PPC_SRC := src/wdt_class.c src/wdt_decode.c src/wdt_webp_random.c
+PPC_WARN := -Wall -Wextra -Werror -Wno-pointer-sign
+
+# --- MorphOS -------------------------------------------------------------------
+#
+# start.o is linked first: it is the function that says no to being run as
+# a program. The strip keeps the symbol table, where the system looks for
+# __abox__ to know a native binary.
+
+MOS_CC ?= ppc-morphos-gcc
+MOS_STRIP ?= ppc-morphos-strip
+MOS_DIR := $(BUILD)/morphos
+MOS_CFLAGS := -noixemul -O2 -fno-common
+MOS_OBJ := $(patsubst %.c,$(MOS_DIR)/%.o,src/mos/start.c src/mos/lib.c $(PPC_SRC))
+MOS_WEBP_OBJ := $(patsubst %.c,$(MOS_DIR)/%.o,$(WEBP_SRC))
+
+morphos: $(MOS_DIR)/webp.datatype $(MOS_DIR)/dtprobe
+
+$(MOS_DIR)/dtprobe: tools/dtprobe.c
+	@mkdir -p "$(dir $@)"
+	$(MOS_CC) -noixemul -O2 $(PPC_WARN) -o "$@" "$<"
+
+$(MOS_DIR)/src/wdt_libc.o: src/wdt_libc.c
+	@mkdir -p "$(dir $@)"
+	$(MOS_CC) $(MOS_CFLAGS) $(PPC_WARN) -fno-builtin \
+		-fno-tree-loop-distribute-patterns -fno-strict-aliasing -c -o "$@" "$<"
+
+$(MOS_OBJ): $(MOS_DIR)/%.o: %.c $(HEADERS)
+	@mkdir -p "$(dir $@)"
+	$(MOS_CC) $(MOS_CFLAGS) $(PPC_WARN) $(WEBP_CPPFLAGS) -Isrc -c -o "$@" "$<"
+
+$(MOS_WEBP_OBJ): $(MOS_DIR)/%.o: %.c $(HEADERS)
+	@mkdir -p "$(dir $@)"
+	$(MOS_CC) $(MOS_CFLAGS) $(WEBP_CPPFLAGS) -c -o "$@" "$<"
+
+$(MOS_DIR)/webp.datatype: $(MOS_OBJ) $(MOS_DIR)/src/wdt_libc.o $(MOS_WEBP_OBJ)
+	$(MOS_CC) -noixemul -nostartfiles -nostdlib -o "$@" $^ -lgcc
+	$(MOS_STRIP) --strip-unneeded --remove-section=.comment "$@"
+	@strings "$@" | grep -q '^\$$VER: webp.datatype ' || \
+		{ echo "$@: no version string" >&2; rm -f "$@"; exit 1; }
+
+# --- AmigaOS 4.1 ----------------------------------------------------------------
+
+OS4_CC ?= ppc-amigaos-gcc
+OS4_STRIP ?= ppc-amigaos-strip
+OS4_DIR := $(BUILD)/os4
+OS4_CFLAGS := -mcrt=newlib -O2 -fno-common
+OS4_OBJ := $(patsubst %.c,$(OS4_DIR)/%.o,src/os4/lib.c $(PPC_SRC))
+OS4_WEBP_OBJ := $(patsubst %.c,$(OS4_DIR)/%.o,$(WEBP_SRC))
+
+os4: $(OS4_DIR)/webp.datatype $(OS4_DIR)/dtprobe
+
+$(OS4_DIR)/dtprobe: tools/dtprobe.c
+	@mkdir -p "$(dir $@)"
+	$(OS4_CC) -mcrt=newlib -O2 $(PPC_WARN) -o "$@" "$<"
+
+$(OS4_DIR)/src/wdt_libc.o: src/wdt_libc.c
+	@mkdir -p "$(dir $@)"
+	$(OS4_CC) $(OS4_CFLAGS) $(PPC_WARN) -fno-builtin \
+		-fno-tree-loop-distribute-patterns -fno-strict-aliasing -c -o "$@" "$<"
+
+$(OS4_OBJ): $(OS4_DIR)/%.o: %.c $(HEADERS)
+	@mkdir -p "$(dir $@)"
+	$(OS4_CC) $(OS4_CFLAGS) $(PPC_WARN) $(WEBP_CPPFLAGS) -Isrc -c -o "$@" "$<"
+
+$(OS4_WEBP_OBJ): $(OS4_DIR)/%.o: %.c $(HEADERS)
+	@mkdir -p "$(dir $@)"
+	$(OS4_CC) $(OS4_CFLAGS) $(WEBP_CPPFLAGS) -c -o "$@" "$<"
+
+$(OS4_DIR)/webp.datatype: $(OS4_OBJ) $(OS4_DIR)/src/wdt_libc.o $(OS4_WEBP_OBJ)
+	$(OS4_CC) -mcrt=newlib -nostartfiles -nostdlib -o "$@" $^ -lgcc
+	$(OS4_STRIP) --strip-unneeded --remove-section=.comment "$@"
 	@strings "$@" | grep -q '^\$$VER: webp.datatype ' || \
 		{ echo "$@: no version string" >&2; rm -f "$@"; exit 1; }
 

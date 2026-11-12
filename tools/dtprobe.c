@@ -49,6 +49,16 @@ struct DataTypesIFace *IDataTypes;
 static const char version[] __attribute__((used)) =
 	"$VER: dtprobe 1.0 (12.11.2026)";
 
+static APTR get_memory(ULONG size)
+{
+#if defined(__amigaos4__)
+	return AllocVecTags(size, AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0,
+	                    TAG_DONE);
+#else
+	return AllocVec(size, MEMF_ANY | MEMF_CLEAR);
+#endif
+}
+
 static LONG ticks(void)
 {
 	struct DateStamp now;
@@ -131,7 +141,7 @@ static BOOL save_planar(const char *name, struct BitMap *bm,
 	UBYTE *row;
 	BOOL ok = TRUE;
 
-	row = AllocVec(width * 4, MEMF_ANY);
+	row = get_memory(width * 4);
 	if (row == NULL)
 		return FALSE;
 	file = open_pam(name, width, height);
@@ -224,7 +234,7 @@ static LONG probe(const char *name, const char *out)
 
 	if (out != NULL && picture_version >= 43) {
 		ULONG width = bmh->bmh_Width, height = bmh->bmh_Height;
-		UBYTE *argb = AllocVec(width * height * 4, MEMF_ANY | MEMF_CLEAR);
+		UBYTE *argb = get_memory(width * height * 4);
 
 		if (argb == NULL) {
 			Printf("no memory for the pixels\n");

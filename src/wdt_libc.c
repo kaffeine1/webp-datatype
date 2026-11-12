@@ -37,11 +37,24 @@ int abs(int value);
 void qsort(void *base, size_t count, size_t size,
            int (*compare)(const void *, const void *));
 
-void *malloc(size_t size)
+static void *allocate(size_t size, int clear)
 {
 	if (size == 0)
 		size = 1;
-	return AllocVec(size, MEMF_ANY);
+#if defined(__amigaos4__)
+	/* AmigaOS 4 retired AllocVec(): this is its replacement. */
+	if (clear)
+		return AllocVecTags(size, AVT_Type, MEMF_SHARED,
+		                    AVT_ClearWithValue, 0, TAG_DONE);
+	return AllocVecTags(size, AVT_Type, MEMF_SHARED, TAG_DONE);
+#else
+	return AllocVec(size, clear ? MEMF_ANY | MEMF_CLEAR : MEMF_ANY);
+#endif
+}
+
+void *malloc(size_t size)
+{
+	return allocate(size, 0);
 }
 
 void *calloc(size_t count, size_t size)
@@ -50,9 +63,7 @@ void *calloc(size_t count, size_t size)
 
 	if (size != 0 && total / size != count)
 		return NULL;
-	if (total == 0)
-		total = 1;
-	return AllocVec(total, MEMF_ANY | MEMF_CLEAR);
+	return allocate(total, 1);
 }
 
 void free(void *block)
