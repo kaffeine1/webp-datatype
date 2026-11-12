@@ -1,0 +1,51 @@
+; Copyright (c) 2026 Michele Dipace <michele.dipace@kaffeine.net>
+; SPDX-License-Identifier: GPL-3.0-or-later
+;
+; Copies webp.datatype and its descriptor into the system.
+; Run it from its own drawer:
+;
+;     CD <this drawer>
+;     Execute Install
+
+FailAt 21
+
+If NOT EXISTS Classes/DataTypes/webp.datatype
+  Echo "Run this script from its own drawer: CD there, then Execute Install."
+  Quit 20
+EndIf
+
+If EXISTS SYS:Classes/DataTypes/webp.datatype
+  Echo "A webp.datatype is installed already:"
+  Version SYS:Classes/DataTypes/webp.datatype
+  Ask "Replace it with version @VERSION@? (y/n)"
+  If NOT WARN
+    Echo "Nothing was changed."
+    Quit 0
+  EndIf
+EndIf
+
+If NOT EXISTS SYS:Classes/DataTypes
+  MakeDir SYS:Classes/DataTypes
+EndIf
+If EXISTS SYS:Devs
+  If NOT EXISTS SYS:Devs/DataTypes
+    MakeDir SYS:Devs/DataTypes
+  EndIf
+EndIf
+
+Copy Classes/DataTypes/webp.datatype SYS:Classes/DataTypes/webp.datatype
+If ERROR
+  Echo "The library could not be copied to SYS:Classes/DataTypes."
+  Quit 20
+EndIf
+
+Copy Devs/DataTypes/WebP DEVS:DataTypes/WebP
+If ERROR
+  Echo "The descriptor could not be copied to DEVS:DataTypes."
+  Quit 20
+EndIf
+
+AddDataTypes REFRESH
+
+Echo "webp.datatype @VERSION@ is installed."
+Echo "If WEBP files are not recognised yet, restart the computer."

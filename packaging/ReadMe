@@ -1,0 +1,118 @@
+webp.datatype @VERSION@ (@DATE@)
+
+A picture datatype that reads WEBP files. Once it is installed, every
+program that opens pictures through datatypes.library (MultiView, the
+Workbench, image viewers, anything that asks the system for a picture)
+opens WEBP files too, without knowing anything about the format.
+
+This archive is for @SYSTEM@.
+There is one archive for AmigaOS 3.x (68020 or better), one for
+AmigaOS 4.1 and one for MorphOS 3. AROS has a WEBP datatype of its own
+in the system and needs none of them.
+
+It reads lossy pictures (VP8), lossless pictures (VP8L), pictures with
+alpha in both forms, and the first frame of an animation. It does not
+write WEBP files and it does not play animations.
+
+The decoding is done by libwebp 1.6.0, the reference library of the
+WebM project, unchanged.
+
+
+INSTALLING
+
+  Open a Shell, change to this drawer and type
+
+      Execute Install
+
+  or copy the two files by hand:
+
+      Classes/DataTypes/webp.datatype   to   SYS:Classes/DataTypes/
+      Devs/DataTypes/WebP               to   DEVS:DataTypes/
+
+  and then restart, or tell the system about the new descriptor:
+
+      AddDataTypes REFRESH
+
+  If a webp.datatype is installed already, Install shows its version
+  and asks before it replaces it. Another WEBP datatype uses the same
+  two file names, so only one can be installed at a time.
+
+  The descriptor recognises a file by its first twelve bytes, not by
+  its name: a WEBP file without the .webp extension is recognised too.
+
+
+REMOVING
+
+  Delete SYS:Classes/DataTypes/webp.datatype and DEVS:DataTypes/WebP,
+  then restart.
+
+
+WHAT EACH SYSTEM GETS
+
+  A datatype hands its pixels to the system's picture.datatype, and
+  what that one can take differs.
+
+  AmigaOS 4.1, MorphOS, and AmigaOS 3.2 with picture.datatype 47.9 or
+  later: true colour, and the alpha channel is kept.
+
+  AmigaOS 3.5, 3.9, 3.1.4, an older 3.2, or 3.0/3.1 with the
+  picture.datatype of a graphics card system (V43 to 47.8): true
+  colour. These do not know about alpha, so a picture with alpha is
+  laid on a white background first.
+
+  Plain AmigaOS 3.0/3.1 (picture.datatype V39 to V42): a planar picture
+  with the best 256 colours for it, dithered. Pixels that are less than
+  half opaque become the transparent colour.
+
+  On a 68000 the library refuses to open, and WEBP files are simply not
+  recognised.
+
+
+CHECKING AN INSTALLATION
+
+  Extras/dtprobe opens a picture through datatypes.library, the way any
+  program does, and says what came back:
+
+      Extras/dtprobe Extras/pictures/alpha-lossy.webp
+
+  The last line is a checksum of the pixels. The checksums the test
+  pictures in Extras/pictures must give are in docs/CHECKS.md, in the
+  source.
+
+
+MEMORY AND SPEED
+
+  A picture is decoded at its full size, in one go. While it is opened
+  the decoded pixels exist twice for a moment: a 512 x 512 picture with
+  alpha needs 2 MB for that moment, plus the file. Pictures of more than
+  8192 x 8192 pixels and files of more than 64 MB are refused.
+
+  On a 68020 the decoding is not quick. On a stock A1200 (14 MHz) a
+  512 x 512 lossy picture with alpha opens in 17 seconds, a lossless
+  one in 9, a 320 x 240 lossy picture in under 5.
+
+
+STATUS
+
+  This is the first release. It was run in emulators on every system it
+  is made for and, with dtprobe, on three real machines. What was tried
+  and what was not is in docs/CHECKS.md, in the source.
+
+
+SOURCE AND LICENCE
+
+  https://github.com/kaffeine1/webp-datatype
+  This archive was built from commit @COMMIT@.
+
+  webp.datatype is free software under the GNU General Public License,
+  version 3 or (at your option) any later version: see COPYING.
+  Copyright (c) 2026 Michele Dipace.
+
+  libwebp is Copyright (c) 2010 Google Inc. and is under its own BSD
+  3-clause licence, with a patent grant: see COPYING.libwebp and
+  PATENTS.libwebp.
+
+
+HISTORY
+
+  45.1 (12.11.2026)   First release.

@@ -60,7 +60,7 @@ endif
 HOST_WEBP_OBJ := $(patsubst %.c,$(HOST_DIR)/%.o,$(WEBP_SRC))
 HOST_OBJ := $(patsubst %.c,$(HOST_DIR)/%.o,$(CORE_SRC) tests/webpcheck.c)
 
-.PHONY: all test clean os3 morphos os4 descriptor kit
+.PHONY: all test clean os3 morphos os4 descriptor kit dist
 all: $(HOST_DIR)/webpcheck
 
 $(HOST_WEBP_OBJ): $(HOST_DIR)/%.o: %.c $(HEADERS)
@@ -249,6 +249,12 @@ kit: descriptor
 		cp tests/pictures/*.webp "$$d/pictures/"; \
 		echo "$$d"; \
 	done
+
+# One LhA archive for each lane that has been built, with the Aminet readme
+# beside it, in dist/. Nothing is published. See scripts/package-release.sh.
+
+dist: descriptor
+	sh scripts/package-release.sh "$(BUILD)" dist
 
 clean:
 	rm -rf "$(BUILD)"

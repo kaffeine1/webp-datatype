@@ -138,6 +138,9 @@ to draw the test pictures again).
     make morphos         needs ppc-morphos-gcc
     make os4             needs ppc-amigaos-gcc
 
+    make dist            one LhA archive for each lane that has been built,
+                         in dist/ (needs an LhA that creates archives: LHA=)
+
 The three libraries are built without a C library and without startup
 code: `src/wdt_libc.c` holds the few C functions the decoder calls, on top
 of exec.library, and libgcc supplies the 64 bit arithmetic.
@@ -152,6 +155,7 @@ of exec.library, and libgcc supplies the 64 bit arithmetic.
     src/mos/            the MorphOS one
     src/os4/            the AmigaOS 4 one
     descriptor/         writes the DEVS:DataTypes/WebP descriptor
+    packaging/          the ReadMe and the Install script of the archives
     tools/dtprobe.c     opens a picture through datatypes.library and
                         saves what came back, to compare with dwebp
     tests/              the test pictures and the host tests
