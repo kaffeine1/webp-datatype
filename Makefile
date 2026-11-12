@@ -108,7 +108,7 @@ OS3_WARN := -Wall -Wextra -Werror -Wno-pointer-sign
 OS3_OBJ := $(patsubst %.c,$(OS3_DIR)/%.o,$(AMIGA_SRC))
 OS3_WEBP_OBJ := $(patsubst %.c,$(OS3_DIR)/%.o,$(WEBP_SRC))
 
-os3: $(OS3_DIR)/webp.datatype $(OS3_DIR)/dtprobe
+os3: $(OS3_DIR)/webp.datatype $(OS3_DIR)/dtprobe $(OS3_DIR)/webpcheck
 
 # The test tool is an ordinary program, with the compiler's C library.
 $(OS3_DIR)/dtprobe: tools/dtprobe.c
@@ -141,6 +141,15 @@ $(OS3_DIR)/webp.datatype: $(OS3_DIR)/src/os3/start.o $(OS3_DIR)/src/os3/lib.o \
 	$(OS3_CC) -noixemul -m68020 -nostartfiles -nostdlib -s -o "$@" $^ -lgcc
 	@strings "$@" | grep -q '^\$$VER: webp.datatype ' || \
 		{ echo "$@: no version string" >&2; rm -f "$@"; exit 1; }
+
+# The host test program built for the 68020: run on an Amiga, or in an
+# emulator, it writes the same PAM files as the host build, which checks the
+# 68k compiler's output of the decoder and of src/wdt_libc.c without any
+# datatype in between.
+$(OS3_DIR)/webpcheck: tests/webpcheck.c $(OS3_DIR)/src/wdt_decode.o \
+		$(OS3_DIR)/src/wdt_quant.o $(OS3_DIR)/src/wdt_webp_random.o \
+		$(OS3_DIR)/src/wdt_libc.o $(OS3_WEBP_OBJ)
+	$(OS3_CC) -noixemul -m68020 -O2 $(OS3_WARN) -Isrc -o "$@" $^
 
 # --- the two PowerPC lanes ----------------------------------------------------
 #
