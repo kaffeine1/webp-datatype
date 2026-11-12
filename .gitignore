@@ -1,0 +1,7 @@
+/build/
+/dist/
+*.o
+*.lha
+*.local.md
+.DS_Store
+__pycache__/
