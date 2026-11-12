@@ -26,8 +26,8 @@ with no changes. The datatype around it is new code.
 This is the first version, 45.1. It has been run in emulators on every
 system in the table below and, with a test program, on three real
 machines; `docs/CHECKS.md` says what was tried, on what, and what was not.
-There is no packaged release yet: build it from the source, as described
-under Building.
+The [releases page](https://github.com/kaffeine1/webp-datatype/releases)
+has it as one LhA archive for each system, with an `Install` script.
 
 ## Which systems
 
