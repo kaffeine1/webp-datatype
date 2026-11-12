@@ -115,12 +115,14 @@ static void box_sort(const struct box *box, struct cell *cells,
 	memcpy(&cells[box->first], spare, box->cells * sizeof(struct cell));
 }
 
-/* Splits the boxes until there are enough, and averages each into a colour. */
+/*
+ * Splits the boxes until there are enough, and averages each into a colour.
+ * boxes[] has room for 256: it is the caller's, to keep it off the stack.
+ */
 static unsigned median_cut(struct cell *cells, struct cell *spare,
-                           unsigned ncells, unsigned wanted,
+                           struct box *boxes, unsigned ncells, unsigned wanted,
                            unsigned char rgb[][3])
 {
-	struct box boxes[256];
 	unsigned count = 1, i, k;
 
 	boxes[0].first = 0;
@@ -281,6 +283,7 @@ int wdt_quant_begin(struct wdt_palette *p, const struct wdt_picture *pic,
 {
 	unsigned long *histogram;
 	struct cell *cells = NULL, *spare = NULL;
+	struct box *boxes = NULL;
 	unsigned long x, y, opaque_pixels = 0;
 	unsigned ncells = 0, i, first, shift = 0;
 	int see_through = 0;
@@ -335,7 +338,8 @@ int wdt_quant_begin(struct wdt_palette *p, const struct wdt_picture *pic,
 	} else {
 		cells = malloc(ncells * sizeof(*cells));
 		spare = malloc(ncells * sizeof(*spare));
-		if (cells == NULL || spare == NULL)
+		boxes = malloc(256 * sizeof(*boxes));
+		if (cells == NULL || spare == NULL || boxes == NULL)
 			goto no_memory;
 
 		/* Keep the sums of median_cut() inside 32 bits. */
@@ -354,17 +358,19 @@ int wdt_quant_begin(struct wdt_palette *p, const struct wdt_picture *pic,
 				cells[ncells].count = 1;
 			ncells++;
 		}
-		p->count = first + median_cut(cells, spare, ncells, max_colours - first,
-		                              &p->rgb[first]);
+		p->count = first + median_cut(cells, spare, boxes, ncells,
+		                              max_colours - first, &p->rgb[first]);
 	}
 
 	index_by_green(p, first);
+	free(boxes);
 	free(spare);
 	free(cells);
 	free(histogram);
 	return 1;
 
 no_memory:
+	free(boxes);
 	free(spare);
 	free(cells);
 	free(histogram);

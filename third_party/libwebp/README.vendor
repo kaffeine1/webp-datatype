@@ -6,6 +6,8 @@ SHA256 of that archive: e4ab7009bf0629fd11982d4c2aa83964cf244cffba7347ecd39019a9
 
 The files are unchanged copies. scripts/vendor-libwebp.sh lists them and
 copies them again from an unpacked archive. The build configuration is
-src/webp/config.h in this repository's own src directory, not here.
+libwebp-config/src/webp/config.h in this repository, not here. One file of
+the decoder is left out, src/utils/random_utils.c: src/wdt_webp_random.c
+in this repository says why and stands in for it.
 
 Licence: COPYING (BSD 3-clause), with the patent grant in PATENTS.

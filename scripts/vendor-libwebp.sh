@@ -8,7 +8,8 @@
 #
 # Only the plain C decoder goes in: no encoder, no mux, none of the SSE,
 # NEON, MIPS or MSA files (config.h keeps them switched off, and no lane of
-# this datatype has those instruction sets).
+# this datatype has those instruction sets). src/utils/random_utils.c stays
+# out as well: src/wdt_webp_random.c says why and stands in for it.
 
 set -eu
 
@@ -37,7 +38,7 @@ src/dsp/cpu.h src/dsp/dsp.h src/dsp/lossless.h src/dsp/lossless_common.h
 src/dsp/yuv.h
 src/utils/bit_reader_utils.c src/utils/color_cache_utils.c
 src/utils/filters_utils.c src/utils/huffman_utils.c src/utils/palette.c
-src/utils/quant_levels_dec_utils.c src/utils/random_utils.c
+src/utils/quant_levels_dec_utils.c
 src/utils/rescaler_utils.c src/utils/thread_utils.c src/utils/utils.c
 src/utils/bit_reader_inl_utils.h src/utils/bit_reader_utils.h
 src/utils/color_cache_utils.h src/utils/endian_inl_utils.h
@@ -65,7 +66,9 @@ SHA256 of that archive: $SHA256
 
 The files are unchanged copies. scripts/vendor-libwebp.sh lists them and
 copies them again from an unpacked archive. The build configuration is
-src/webp/config.h in this repository's own src directory, not here.
+libwebp-config/src/webp/config.h in this repository, not here. One file of
+the decoder is left out, src/utils/random_utils.c: src/wdt_webp_random.c
+in this repository says why and stands in for it.
 
 Licence: COPYING (BSD 3-clause), with the patent grant in PATENTS.
 EOF
