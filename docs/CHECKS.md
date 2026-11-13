@@ -1,9 +1,9 @@
 # How each lane was checked
 
 Everything below was run on 12 November 2026: first in emulators, then
-`dtprobe` on three real machines, from a distance, and MultiView on one
-of them. Nobody has yet sat in front of a real machine and looked at a
-picture, so read this as what was tried, on what, and what came out.
+`dtprobe` on three real machines, from a distance, MultiView on one of
+them, and a chat client that installs the datatype itself on the same
+three. Read this as what was tried, on what, and what came out.
 
 The yardstick is always the same. libwebp's own `dwebp` decodes a file on
 the build machine; the datatype decodes the same file on the Amiga; the
@@ -235,11 +235,36 @@ Not tried: `Install` on MorphOS and on AmigaOS 4, and unpacking an archive
 with LhA on an Amiga. The archives have no icons, so `Install` is run from
 a Shell.
 
+## Inside a chat client, on the same real machines
+
+Amigram, a Telegram client for these systems, shows Telegram's stickers
+(WEBP pictures, 512 x 512 with alpha) through datatypes.library. Where the
+system has no WEBP datatype it offers to fetch this one, release 45.1, and
+installs the library and the descriptor itself. That was tried on the
+three real machines above (the Power Mac G5 with MorphOS 3.20, and the
+two A1200 with AmigaOS 3.2.3, one with a 68080 and one with a PiStorm
+and AfA OS), and in the AmigaOS 4.1 emulator:
+
+- The two files the client put into `SYS:Classes/DataTypes` and
+  `DEVS:DataTypes` are the files of the release, byte for byte.
+- Stickers received in a chat are shown as pictures: with their
+  transparency on the G5, on the 68080 machine and in the AmigaOS 4.1
+  emulator, laid on white on the PiStorm machine, whose picture.datatype
+  does not know about alpha.
+- On the PiStorm machine the first version of the client drew the
+  stickers as vertical stripes. The cause was in how it read the pixels
+  back, not in the datatype: AfA OS's picture.datatype 46.9 answers a
+  PDTM_READPIXELARRAY for RGBA pixels with success and writes nothing,
+  and it scrambles ARGB pixels asked for in bands of rows. Asked for the
+  whole picture as ARGB in one request, as `dtprobe` does, it gives the
+  right picture. The README says this for any program that reads the
+  pixels.
+
 ## Not checked
 
-- A picture looked at by a person on the screen of a real machine (the
-  one from the G5 above was read back from a distance; the two 68k
-  machines showed nothing).
+- The test pictures looked at by a person on the screen of a real
+  machine: there they were checked by their checksums or read back from
+  a distance, and what was seen in the client are stickers.
 - AmigaOS 4 on a real machine.
 - The other true colour picture.datatypes without alpha (AmigaOS 3.5, 3.9,
   3.1.4, an early 3.2, the ones of graphics card systems): one of the kind

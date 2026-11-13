@@ -107,6 +107,31 @@ own `dwebp` decodes, and says how each system was checked and on what.
 `make kit` puts the library, the descriptor, `dtprobe` and the test
 pictures of each built lane in one drawer under `build/kit`.
 
+## For programs that read the pixels back
+
+A program that only shows the picture (MultiView, a window with a
+datatype object in it) needs nothing of this. A program that wants the
+pixels themselves, to draw them its own way, should know what the
+picture.datatypes around do; `tools/dtprobe.c` does all of it:
+
+- Send PDTM_READPIXELARRAY with `DoMethodA()` (`IDoMethodA()` on
+  AmigaOS 4), not with `DoDTMethodA()`. The latter writes a GadgetInfo
+  into the second field of the message, which for this method is the
+  address of the pixel buffer.
+- Ask for the whole picture as `PBPAFMT_ARGB`, in one request. The
+  picture.datatype 46.9 of AfA OS answers a request for RGBA pixels with
+  success and writes nothing, and it scrambles pixels asked for in bands
+  of rows. The whole picture as ARGB comes back right there and on every
+  system in the table above.
+- Do not read anything into what the method answers: depending on the
+  system it is 1, 0, or the number of pixels, also when every pixel was
+  read.
+- A picture with alpha has depth 32 and `mskHasAlpha` in its
+  BitMapHeader; laid on white, it has depth 24.
+- A picture.datatype before V43 (plain AmigaOS 3.0 and 3.1) has no true
+  colour pixels to give: do DTM_PROCLAYOUT, then read PDTA_BitMap and
+  the colour table.
+
 ## Memory and speed
 
 A picture is decoded at its full size, in one go. While it is being opened
