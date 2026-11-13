@@ -99,6 +99,26 @@ STATUS
   and what was not is in docs/CHECKS.md, in the source.
 
 
+OTHER WEBP DATATYPES
+
+  This is not the first WEBP datatype for these systems. Aminet already
+  has these:
+
+      util/dtype/webp_dt.lha        AmigaOS 4, the first one, from 2010
+      util/dtype/WarpWebPdt.lha     AmigaOS 3.x (a version for each 68k
+                                    CPU), AmigaOS 4, WarpOS and MorphOS
+      util/dtype/WebPDatatype.lha   AmigaOS 3.x, 68020 or better
+
+  If one of them is installed and does what you need, you do not need
+  this one. Two WEBP datatypes installed at the same time leave the
+  choice between them to the system, so keep only one.
+
+  What this one adds is support for the picture.datatype of a plain
+  AmigaOS 3.0 or 3.1 (V39 to V42), which takes no true colour: there it
+  hands over the best 256 colours for the picture. Its source is free
+  under the GPL, and it is built on libwebp 1.6.0.
+
+
 SOURCE AND LICENCE
 
   https://github.com/kaffeine1/webp-datatype
