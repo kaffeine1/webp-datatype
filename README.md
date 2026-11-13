@@ -41,6 +41,14 @@ AROS is not here on purpose: it has a `webp.datatype` of its own in the
 system, on i386, x86_64 and ARM alike, and nobody should replace a system
 file with this one.
 
+MorphOS 3.20 and 3.21 read WEBP files by themselves, through Reggae (its
+`webp.demuxer` and `webp.decoder`): on a MorphOS 3.21 with no WEBP
+datatype, MultiView opens one. What MorphOS does not have is a WEBP
+datatype, so a program that asks datatypes.library for a picture
+(`NewDTObject` with `GID_PICTURE`) gets none there. On MorphOS this
+datatype is for those programs only; for MultiView it adds nothing.
+`docs/CHECKS.md` has the run.
+
 On a 68000 the library refuses to open, so a WEBP file is simply not
 recognised as a picture there, as if the datatype were not installed.
 

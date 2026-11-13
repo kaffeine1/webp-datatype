@@ -3,7 +3,8 @@
 Everything below was run on 12 November 2026: first in emulators, then
 `dtprobe` on three real machines, from a distance, MultiView on one of
 them, and a chat client that installs the datatype itself on the same
-three. Read this as what was tried, on what, and what came out.
+three. The run on a MorphOS without the datatype is of the day after.
+Read this as what was tried, on what, and what came out.
 
 The yardstick is always the same. libwebp's own `dwebp` decodes a file on
 the build machine; the datatype decodes the same file on the Amiga; the
@@ -211,6 +212,34 @@ RAM:wdt/Classes ADD` and `AddDataTypes RAM:wdt/WebP` as above, and
   window as the machine composed it, read back over the network: nobody
   was at the monitor.
 
+## MorphOS without this datatype
+
+MorphOS has WEBP support of its own, and it is not a datatype. This run,
+of 13 November 2026, is what it does alone: the emulated MorphOS 3.21 of
+above (QEMU, Pegasos 2) after a restart, with nothing of this project in
+it but `dtprobe` and `alpha-lossy.webp` in RAM:. No `Assign`, no
+`AddDataTypes`.
+
+- `MOSSYS:Classes/Multimedia` holds `webp.demuxer` and `webp.decoder`,
+  two classes of Reggae. No WEBP library is in `Classes/DataTypes` and no
+  WEBP descriptor in `Devs/DataTypes`, on SYS: or on MOSSYS:.
+  datatypes.library 51.4, picture.datatype 50.19.
+- `dtprobe RAM:t.webp` says "no picture, error 212" (object of the wrong
+  type): `NewDTObject` with DTST_FILE and GID_PICTURE gives no object.
+- MultiView 3.17 opens the same file: "512 x 512 pixels, 32 bit depth",
+  blended over its window
+  (`shots/morphos-3.21-multiview-no-datatype.png`). With this datatype
+  installed the same line begins with "WebP picture:", the name its
+  descriptor gives.
+
+The Power Mac G5 with MorphOS 3.20 has the same two Reggae classes (both
+51.1, of 30 January 2026) and no WEBP datatype among the system's own.
+MultiView without this datatype was not tried there.
+
+So on MorphOS this datatype changes nothing for MultiView, which shows
+WEBP files anyway. It is for programs that ask datatypes.library for a
+picture, and get none without it.
+
 ## The release archives
 
 `make dist` packs each lane into an LhA archive (`scripts/package-release.sh`).
@@ -270,5 +299,7 @@ and AfA OS), and in the AmigaOS 4.1 emulator:
   3.1.4, an early 3.2, the ones of graphics card systems): one of the kind
   was tried, on the PiStorm machine above.
 - AmigaOS 4 before 4.1 Final Edition Update 3, MorphOS before 3.20.
+- On MorphOS: MultiView on 3.20 without this datatype, and other programs
+  of the system that show pictures.
 - Running out of memory in the middle of a picture.
 - A picture large enough to matter (the largest tried is 512 x 512).

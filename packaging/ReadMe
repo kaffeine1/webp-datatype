@@ -10,6 +10,11 @@ There is one archive for AmigaOS 3.x (68020 or better), one for
 AmigaOS 4.1 and one for MorphOS 3. AROS has a WEBP datatype of its own
 in the system and needs none of them.
 
+MorphOS 3.20 and 3.21 read WEBP files by themselves, through Reggae:
+on MorphOS 3.21 MultiView opens one with no datatype installed. There
+this datatype is only for programs that ask datatypes.library for a
+picture, which get none without it.
+
 It reads lossy pictures (VP8), lossless pictures (VP8L), pictures with
 alpha in both forms, and the first frame of an animation. It does not
 write WEBP files and it does not play animations.
