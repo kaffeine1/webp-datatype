@@ -337,8 +337,67 @@ way it is:
   copied onto itself, a file protected from deleting). After copying,
   the script reads the version of what is in the system.
 
-Not tried: this script on AmigaOS 3 and on AmigaOS 4, and Easy2Install
-itself starting it.
+The same script was run the same day on three more emulated systems,
+each with a 45.2 library built that day and the drawer outside the
+system disk: AmigaOS 3.2.3 (68020, picture.datatype 47.19), Kickstart
+3.1 with Workbench 3.1 (68020, picture.datatype 40.4, `Version` 40.3,
+`Search` 40.1; its floppy is full, so `SYS:` and `DEVS:` pointed at the
+RAM disk for the run) and AmigaOS 4.1 Final Edition Update 3. On all
+three:
+
+- with no WEBP datatype in the system the two files are copied, and on
+  Workbench 3.1 the two `DataTypes` drawers are made first;
+- over 45.2 and over the 45.1 library of the release archive: no
+  question, and 45.2 is there afterwards;
+- started from another directory with no `RAM:webp.datatype`: it says
+  to run it from its own drawer and changes nothing;
+- started from `SYS:` with its files in `RAM:webp.datatype` and 45.1
+  installed: it goes there and installs;
+- over another datatype under this name (the made-up "webp.datatype
+  45.5" file on 3.2.3, the system's ilbm.datatype on 3.1, the system's
+  png.datatype on 4.1) and over a file with no version string: it shows
+  what `Version` says and asks; "n" changes nothing, and "y", tried on
+  the first of the two, replaces it;
+- over a 45.1 library protected from writing and from deleting: `Copy`
+  says why it cannot write, the script says that the library could not
+  be copied, and stops;
+- nothing of the script is left in `T:`;
+- after the last installation `dtprobe` gave the seven checksums of the
+  table with the 45.2 library in memory: the "true colour" column on
+  3.2.3 and on 4.1, the "256 colours" column on 3.1.
+
+What these runs added:
+
+- `Version` prints the date the system's way on these three too
+  ("11/14/2026", "11/14/26"), and the author's name on a line of its
+  own.
+- When the library cannot be copied, the descriptor has been copied by
+  then. The system is left with the old library and the new descriptor,
+  which is the old one but for the version and the date written in it.
+- On AmigaOS 4.1 `Version` says that it found no version in the Shell
+  window, not in what it writes to a file: that line is on the screen
+  above "Another WEBP datatype is installed", not below it.
+- The `Version` of AmigaOS 4.1 can answer from memory. The test put the
+  45.1 library in place and started the script within the same second,
+  and the two libraries have the same size. `Copy` answered 0 and the
+  file was the new one (sent back to the host: the MD5 of the 45.2
+  build), yet `Version` went on answering 45.1 until the file was
+  written again, so the script said that the library could not be
+  copied. It takes a `Version` of a file and then a new file of the same
+  name and size within the same second: with four seconds between the
+  two it did not happen, and neither with `Search` in the place of
+  `Version`. An installation does not do that; a test must wait.
+- The made-up "webp.datatype 45.5" file began with the first four bytes
+  of a 68k program and had nothing valid behind them. AmigaOS 3.2 and
+  MorphOS read its version. The `Version` of AmigaOS 4.1 crashed on it,
+  twice, and the file stayed locked until a restart. That was the test
+  file: the system's png.datatype under this name was read without
+  trouble.
+- When the script goes to `RAM:webp.datatype` by itself, the Shell that
+  ran it is left in that drawer.
+
+Not tried: Easy2Install itself starting this script, AmigaOS 3.5, 3.9
+and 3.1.4, and any real machine.
 
 ## Not checked
 
