@@ -6,22 +6,51 @@
 ;
 ;     CD <this drawer>
 ;     Execute Install
+;
+; It asks a question only when it is about to replace a WEBP datatype
+; that is not this one, so that a program can run it with nobody there.
 
 FailAt 21
 
-If NOT EXISTS Classes/DataTypes/webp.datatype
+; Easy2Install on MorphOS unpacks the archive to RAM:webp.datatype and
+; may start this script from another directory. The drawer is known by
+; the Install file: with a datatype installed, SYS: has the others too.
+If NOT EXISTS Install
+  If EXISTS RAM:webp.datatype/Install
+    CD RAM:webp.datatype
+  EndIf
+EndIf
+
+If NOT EXISTS Install
   Echo "Run this script from its own drawer: CD there, then Execute Install."
   Quit 20
 EndIf
+If NOT EXISTS Classes/DataTypes/webp.datatype
+  Echo "Classes/DataTypes/webp.datatype is not in this drawer."
+  Quit 20
+EndIf
 
+; This datatype has its author in its version string from 45.2 on.
+; 45.1 had only its name and date, and Version prints a date the way
+; the system's language wants it, so 45.1 is looked for in the file
+; itself. Anything else is another datatype.
 If EXISTS SYS:Classes/DataTypes/webp.datatype
-  Echo "A webp.datatype is installed already:"
-  Version SYS:Classes/DataTypes/webp.datatype
-  Ask "Replace it with version @VERSION@? (y/n)"
-  If NOT WARN
-    Echo "Nothing was changed."
-    Quit 0
+  Version >T:webpdt-installed SYS:Classes/DataTypes/webp.datatype FILE FULL
+  Search >NIL: T:webpdt-installed "Michele Dipace" QUIET
+  If WARN
+    Search >NIL: SYS:Classes/DataTypes/webp.datatype "webp.datatype 45.1 (12.11.2026)" QUIET
+    If WARN
+      Echo "Another WEBP datatype is installed:"
+      Type T:webpdt-installed
+      Ask "Replace it with webp.datatype @VERSION@? (y/n)"
+      If NOT WARN
+        Delete >NIL: T:webpdt-installed QUIET
+        Echo "Nothing was changed."
+        Quit 0
+      EndIf
+    EndIf
   EndIf
+  Delete >NIL: T:webpdt-installed QUIET
 EndIf
 
 If NOT EXISTS SYS:Classes/DataTypes
@@ -34,13 +63,19 @@ If EXISTS SYS:Devs
 EndIf
 
 Copy Classes/DataTypes/webp.datatype SYS:Classes/DataTypes/webp.datatype
-If ERROR
+Copy Devs/DataTypes/WebP DEVS:DataTypes/WebP
+
+; The Copy of MorphOS answers 0 also when it could not write, so what
+; is in the system now is looked at, not what Copy answered.
+Version >T:webpdt-installed SYS:Classes/DataTypes/webp.datatype FILE FULL
+Search >NIL: T:webpdt-installed "webp.datatype @VERSION@" QUIET
+If WARN
+  Delete >NIL: T:webpdt-installed QUIET
   Echo "The library could not be copied to SYS:Classes/DataTypes."
   Quit 20
 EndIf
-
-Copy Devs/DataTypes/WebP DEVS:DataTypes/WebP
-If ERROR
+Delete >NIL: T:webpdt-installed QUIET
+If NOT EXISTS DEVS:DataTypes/WebP
   Echo "The descriptor could not be copied to DEVS:DataTypes."
   Quit 20
 EndIf

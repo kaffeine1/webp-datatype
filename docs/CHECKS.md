@@ -3,7 +3,8 @@
 Everything below was run on 12 November 2026: first in emulators, then
 `dtprobe` on three real machines, from a distance, MultiView on one of
 them, and a chat client that installs the datatype itself on the same
-three. The run on a MorphOS without the datatype is of the day after.
+three. The run on a MorphOS without the datatype is of the day after, and
+the one of the Install script that follows 45.1 of 14 November.
 Read this as what was tried, on what, and what came out.
 
 The yardstick is always the same. libwebp's own `dwebp` decodes a file on
@@ -288,6 +289,56 @@ and AfA OS), and in the AmigaOS 4.1 emulator:
   whole picture as ARGB in one request, as `dtprobe` does, it gives the
   right picture. The README says this for any program that reads the
   pixels.
+
+## The Install script after 45.1
+
+Easy2Install, the package manager of MorphOS, unpacks an archive to the
+RAM disk and starts its `Install` script itself. On a real MorphOS
+machine it did that with the 45.1 archive of MorphOS-Storage, where the
+drawer is named `webp.datatype`: the files were in `RAM:webp.datatype`.
+The 45.1 script was written for a person in a Shell: it wanted to be
+started from its drawer, and it asked before it replaced any
+webp.datatype, its own older version too.
+
+The script that follows 45.1 asks only before it replaces a WEBP datatype
+that is not this one. It was run on 14 November 2026 on the emulated
+MorphOS 3.21 of above, with a 45.2 library built that day, the files in
+`RAM:webp.datatype`, started as `C:Execute RAM:webp.datatype/Install`:
+
+- with no WEBP datatype in the system, started from `SYS:`: it goes to
+  its drawer and copies the two files, and `Version` reads 45.2 from the
+  installed library;
+- with 45.2 installed, started from `SYS:` and from another drawer of
+  the RAM disk: it copies again, without a question;
+- over the 45.1 library of the release archive: no question, and 45.2 is
+  there afterwards;
+- over a 45.1 library protected from writing and from deleting: it says
+  that the library could not be copied, and stops;
+- over a file with another version string ("webp.datatype 45.5", made
+  for the test) and over a file with no version string: it shows what
+  `Version` says about the file and asks; "n" changes nothing, and "y",
+  tried on the first of the two, replaces it;
+- nothing is left in `T:`.
+
+Three things came out of the first tries, and are why the script is the
+way it is:
+
+- `Version` prints the date the way the system's language wants it
+  ("11/12/26" on that English system, "12-Nov-2026" on an Italian one),
+  so a text with a date in it cannot be looked for in what it prints.
+  From 45.2 on the library has its author's name after the date, and
+  that is what the script looks for; 45.1 is looked for by its whole
+  version string in the file itself.
+- Started from `SYS:` with a datatype installed, the script found
+  `Classes/DataTypes/webp.datatype` right there, took `SYS:` for its own
+  drawer and copied the two files onto themselves. It now knows its
+  drawer by the `Install` file.
+- The `Copy` of MorphOS answers 0 also when it could not write (a file
+  copied onto itself, a file protected from deleting). After copying,
+  the script reads the version of what is in the system.
+
+Not tried: this script on AmigaOS 3 and on AmigaOS 4, and Easy2Install
+itself starting it.
 
 ## Not checked
 
