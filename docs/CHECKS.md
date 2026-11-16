@@ -3,8 +3,9 @@
 Everything below was run on 12 November 2026: first in emulators, then
 `dtprobe` on three real machines, from a distance, MultiView on one of
 them, and a chat client that installs the datatype itself on the same
-three. The run on a MorphOS without the datatype is of the day after, and
-the one of the Install script that follows 45.1 of 14 November.
+three. The run on a MorphOS without the datatype is of the day after, the
+runs of the Install script that follows 45.1 of 14 November, and the one
+of that script on the real MorphOS machine of 16 November.
 Read this as what was tried, on what, and what came out.
 
 The yardstick is always the same. libwebp's own `dwebp` decodes a file on
@@ -241,7 +242,7 @@ So on MorphOS this datatype changes nothing for MultiView, which shows
 WEBP files anyway. It is for programs that ask datatypes.library for a
 picture, and get none without it.
 
-## The release archives
+## The release archives of 45.1
 
 `make dist` packs each lane into an LhA archive (`scripts/package-release.sh`).
 
@@ -396,8 +397,19 @@ What these runs added:
 - When the script goes to `RAM:webp.datatype` by itself, the Shell that
   ran it is left in that drawer.
 
+On 16 November 2026 the script ran on a real machine: the Power Mac G5
+with MorphOS 3.20 of above, where Easy2Install had installed the 45.1
+archive of MorphOS-Storage. An archive with the 45.2 library and
+descriptor for MorphOS (the files of the release archive) was copied to
+its RAM disk and checked there with `lha t`, then unpacked and `Install`
+run in a Shell by a person at the machine. It installed 45.2 over 45.1
+without a question. Read from a distance afterwards, `Version` gives
+"webp.datatype 45.2 (14-Nov-2026)" and "Michele Dipace", and the library
+and the descriptor in the system have the sizes of the files of the
+archive.
+
 Not tried: Easy2Install itself starting this script, AmigaOS 3.5, 3.9
-and 3.1.4, and any real machine.
+and 3.1.4, and a real machine with AmigaOS 3 or 4.
 
 ## Not checked
 

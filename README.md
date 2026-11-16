@@ -23,9 +23,13 @@ with no changes. The datatype around it is new code.
 
 ## Status
 
-This is the first version, 45.1. It has been run in emulators on every
+This is the second version, 45.2. Its decoder is the one of 45.1; what is
+new is the `Install` script, which a program such as Easy2Install can now
+run with nobody there. The decoder has been run in emulators on every
 system in the table below and, with a test program, on three real
-machines; `docs/CHECKS.md` says what was tried, on what, and what was not.
+machines. The new `Install` has been run in emulators on every system in
+the table and on a real Power Mac G5 with MorphOS 3.20. `docs/CHECKS.md`
+says what was tried, on what, and what was not.
 The [releases page](https://github.com/kaffeine1/webp-datatype/releases)
 has it as one LhA archive for each system, with an `Install` script.
 

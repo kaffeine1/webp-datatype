@@ -100,9 +100,12 @@ MEMORY AND SPEED
 
 STATUS
 
-  This is the first release. It was run in emulators on every system it
-  is made for and, with dtprobe, on three real machines. What was tried
-  and what was not is in docs/CHECKS.md, in the source.
+  This is the second release. Its decoder is the one of 45.1, which was
+  run in emulators on every system it is made for and, with dtprobe, on
+  three real machines. The Install script is new: it was run in emulators
+  on every system it is made for and on a real Power Mac G5 with MorphOS
+  3.20. What was tried and what was not is in docs/CHECKS.md, in the
+  source.
 
 
 OTHER WEBP DATATYPES
