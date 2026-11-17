@@ -4,8 +4,9 @@ Everything below was run on 12 November 2026: first in emulators, then
 `dtprobe` on three real machines, from a distance, MultiView on one of
 them, and a chat client that installs the datatype itself on the same
 three. The run on a MorphOS without the datatype is of the day after, the
-runs of the Install script that follows 45.1 of 14 November, and the one
-of that script on the real MorphOS machine of 16 November.
+runs of the Install script that follows 45.1 of 14 November, the one of
+that script on the real MorphOS machine of 16 November, and `dtprobe`
+with 45.2 there the day after.
 Read this as what was tried, on what, and what came out.
 
 The yardstick is always the same. libwebp's own `dwebp` decodes a file on
@@ -407,6 +408,17 @@ without a question. Read from a distance afterwards, `Version` gives
 "webp.datatype 45.2 (14-Nov-2026)" and "Michele Dipace", and the library
 and the descriptor in the system have the sizes of the files of the
 archive.
+
+On 17 November the MorphOS release archive of 45.2 went to the RAM disk
+of the same machine, passed `lha t` there and was unpacked there. Its
+`dtprobe` ran from a script (`Stack 1048576`, output to a file, over a
+remote shell) on the seven test pictures, through the 45.2 installed the
+day before ("datatype: WebP"):
+
+- the seven checksums of the "true colour" column;
+- the five pictures with alpha keep it (depth 32, masking 4,
+  PDTA_AlphaChannel);
+- every picture opens in 0.02 s or less by the clock `dtprobe` reads.
 
 Not tried: Easy2Install itself starting this script, AmigaOS 3.5, 3.9
 and 3.1.4, and a real machine with AmigaOS 3 or 4.
